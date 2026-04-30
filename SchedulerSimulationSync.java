@@ -107,17 +107,20 @@ class Process implements Runnable {
         this.startTime = -1;
     }
     
-    @Override
+    
+    
+@Override
     public void run() {
-        // TODO #3: Acquire CPU semaphore before executing
-        // This ensures only allowed number of processes run simultaneously
-        
+        // --- Task 3: Acquire CPU semaphore before executing ---
         try {
+            // محاولة الحصول على تصريح للدخول للمعالج
+            SharedResources.cpuSemaphore.acquire();
+
             if (startTime == -1) {
                 startTime = System.currentTimeMillis();
             }
             
-            // Increment context switch counter
+            // زيادة عداد التبديل (المحمي بـ Lock في SharedResources)
             SharedResources.incrementContextSwitch();
             
             int runTime = Math.min(timeQuantum, remainingTime);
@@ -126,7 +129,7 @@ class Process implements Runnable {
             String message = "  ▶ " + name + " (Priority: " + priority + ") executing quantum [" + runTime + "ms]";
             System.out.println(Colors.BRIGHT_GREEN + message + Colors.RESET);
             
-            // Log execution
+            // تسجيل التنفيذ
             SharedResources.logExecution(name + " started quantum execution");
             
             try {
@@ -138,7 +141,7 @@ class Process implements Runnable {
                     int quantumProgress = (i * 100) / steps;
                     quantumBar = createProgressBar(quantumProgress, 15);
                     System.out.print("\r  " + Colors.YELLOW + "⚡" + Colors.RESET + 
-                                    " Quantum progress: " + quantumBar);
+                                     " Quantum progress: " + quantumBar);
                 }
                 System.out.println();
                 
@@ -157,23 +160,29 @@ class Process implements Runnable {
             
             if (remainingTime > 0) {
                 System.out.println(Colors.BLUE + "  ↻ " + Colors.CYAN + name + Colors.RESET + 
-                                  " yields CPU for context switch" + Colors.RESET);
+                                   " yields CPU for context switch" + Colors.RESET);
                 SharedResources.logExecution(name + " yielded CPU");
             } else {
                 completionTime = System.currentTimeMillis();
                 long waitingTime = (completionTime - creationTime) - burstTime;
+                
+                // استخدام الميثودز المحمية من كلاس SharedResources
                 SharedResources.addWaitingTime(waitingTime);
                 SharedResources.incrementCompletedProcess();
                 SharedResources.logExecution(name + " completed execution");
+                
                 System.out.println(Colors.BRIGHT_GREEN + "  ✓ " + Colors.BOLD + Colors.CYAN + name + 
-                                  Colors.RESET + Colors.BRIGHT_GREEN + " finished execution!" + 
-                                  Colors.RESET);
+                                   Colors.RESET + Colors.BRIGHT_GREEN + " finished execution!" + 
+                                   Colors.RESET);
             }
             System.out.println();
             
+        } catch (InterruptedException e) {
+            System.out.println(Colors.RED + "Thread interrupted: " + name + Colors.RESET);
         } finally {
-            // TODO #4: Release CPU semaphore here
-            // Always release in finally block to prevent deadlocks!
+            // --- Task 4: Release CPU semaphore here ---
+            // تحرير المعالج دائماً للسماح للعملية التالية بالدخول
+            SharedResources.cpuSemaphore.release();
         }
     }
     
