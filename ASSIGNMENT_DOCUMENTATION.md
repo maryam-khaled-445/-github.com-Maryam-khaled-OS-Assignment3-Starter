@@ -189,7 +189,7 @@ Since the counters are independent, fine-grained locking provides better concurr
 
 ## Part 3: Synchronization Analysis (1 mark)
 
-Critical Section #1: Counter Variables
+Critical Section #2: Counter Variables
 
 Which variables:
 contextSwitchCount, completedProcessCount, totalWaitingTime
